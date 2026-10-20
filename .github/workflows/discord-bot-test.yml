@@ -1,0 +1,51 @@
+name: Discord Bot API Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send one test message to Discord
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          token = os.environ["DISCORD_BOT_TOKEN"]
+          channel_id = os.environ["DISCORD_CHANNEL_ID"]
+
+          if not token or not channel_id:
+              raise SystemExit("A required GitHub secret is empty.")
+
+          url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
+          body = json.dumps({
+              "content": "✅ Vinted Alerts bot test successful! Discord API is connected."
+          }).encode("utf-8")
+
+          request = urllib.request.Request(
+              url,
+              data=body,
+              headers={
+                  "Authorization": f"Bot {token}",
+                  "Content-Type": "application/json",
+                  "User-Agent": "VintedAlertsBot (https://github.com/lilstars167-byte/my-vinted-alerts, 1.0)"
+              },
+              method="POST"
+          )
+
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  print(f"Discord API status: {response.status}")
+                  print("Test message sent successfully.")
+          except urllib.error.HTTPError as error:
+              print(f"Discord API status: {error.code}")
+              print(error.read().decode("utf-8")[:1000])
+              raise SystemExit("Discord rejected the test request.")
+          PY
