@@ -1,4 +1,5 @@
 
+
 name: Discord Connection Test
 
 on:
@@ -14,12 +15,13 @@ jobs:
         run: |
           python - <<'PY'
           import os
-          import urllib.request
           import json
+          import urllib.request
+          import urllib.error
 
           url = os.environ["DISCORD_WEBHOOK"]
           data = json.dumps({
-              "content": "Cloud test successful! Your bot can run while your PC is off."
+              "content": "Cloud test successful! Your bot is connected."
           }).encode()
 
           request = urllib.request.Request(
@@ -29,11 +31,13 @@ jobs:
               method="POST"
           )
 
-          with urllib.request.urlopen(request, timeout=15) as response:
-              if response.status not in (200, 204):
-                  raise RuntimeError(
-                      f"Unexpected status: {response.status}"
-                  )
-
-          print("Discord webhook test passed.")
+          try:
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  print("SUCCESS: HTTP", response.status)
+          except urllib.error.HTTPError as error:
+              print("Discord HTTP status:", error.code)
+              print("Discord response:", error.read().decode(
+                  "utf-8", "replace"
+              ))
+              raise
           PY
